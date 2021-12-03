@@ -1,0 +1,39 @@
+use std::env;
+use std::str::FromStr;
+
+mod day1;
+mod day2;
+mod day3;
+mod util;
+
+const DAY_COUNT: u8 = 3;
+
+static ARG_ERR_STRING: &str = "Put a day number or * for all";
+
+fn exec_day(day_n: u8) {
+    match day_n {
+        1 => day1::day1(),
+        2 => day2::day2(),
+        3 => day3::day3(),
+        _ => panic!(),
+    }
+}
+
+fn main() {
+    let raw_day_n = env::args().nth(1).expect(ARG_ERR_STRING);
+    if raw_day_n == "*" {
+        for x in 1..DAY_COUNT + 1 {
+            if x != 1 {
+                println!();
+            }
+            print!("Day{}: ", x);
+            exec_day(x)
+        }
+    } else {
+        let day_n = u8::from_str(&raw_day_n).expect(ARG_ERR_STRING);
+        if !(1..=DAY_COUNT).contains(&day_n) {
+            panic!("Day number must be an integer between 1 and {}", DAY_COUNT);
+        }
+        exec_day(day_n)
+    }
+}
