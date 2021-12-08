@@ -7,9 +7,10 @@ mod day3;
 mod day4;
 mod day5;
 mod day6;
+mod day7;
 mod util;
 
-const DAY_COUNT: u8 = 6;
+const DAY_COUNT: u8 = 7;
 
 static ARG_ERR_STRING: &str = "Put a day number or * for all";
 
@@ -21,6 +22,7 @@ fn exec_day(day_n: u8) {
         4 => day4::day4(),
         5 => day5::day5(),
         6 => day6::day6(),
+        7 => day7::day7(),
         _ => panic!(),
     }
 }
