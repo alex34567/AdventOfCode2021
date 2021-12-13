@@ -1,7 +1,11 @@
+#![warn(unsafe_op_in_unsafe_fn)]
+
 use std::env;
 use std::str::FromStr;
 
 mod day1;
+mod day10;
+mod day11;
 mod day2;
 mod day3;
 mod day4;
@@ -12,7 +16,7 @@ mod day8;
 mod day9;
 mod util;
 
-const DAY_COUNT: u8 = 9;
+const DAY_COUNT: u8 = 11;
 
 static ARG_ERR_STRING: &str = "Put a day number or * for all";
 
@@ -27,6 +31,8 @@ fn exec_day(day_n: u8) {
         7 => day7::day7(),
         8 => day8::day8(),
         9 => day9::day9(),
+        10 => day10::day10(),
+        11 => day11::day11(),
         _ => panic!(),
     }
 }

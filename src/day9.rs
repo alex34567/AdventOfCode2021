@@ -1,4 +1,7 @@
-use crate::util::{two_d_adjacent_iter, two_d_adjacent_enumerated_iter_mut as td_adj_enu_iter_mut};
+use crate::util::{
+    grid_parse, two_d_straight_adjacent_enumerated_iter_mut as td_adj_enu_iter_mut,
+    two_d_straight_adjacent_iter as td_adj_iter,
+};
 
 static INPUT: &str = include_str!("input/Day9.txt");
 
@@ -9,28 +12,17 @@ struct HeightMapEntry {
 }
 
 pub fn day9() {
-    let mut heightmap = INPUT
-        .trim()
-        .split('\n')
-        .map(|line| {
-            line.chars()
-                .map(|c| {
-                    let mut tmp = [0; 4];
-                    let height = c.encode_utf8(&mut tmp).parse().unwrap();
-                    HeightMapEntry {
-                        height,
-                        is_visited: height == 9,
-                    }
-                })
-                .collect()
-        })
-        .collect::<Vec<Vec<_>>>();
+    let mut heightmap = grid_parse(INPUT, |height| HeightMapEntry {
+        height,
+        is_visited: height == 9,
+    });
 
     let mut part1 = 0;
 
     for (y, line) in heightmap.iter().enumerate() {
         for (x, height_entry) in line.iter().enumerate() {
-            let is_lowest = two_d_adjacent_iter(&heightmap, x, y).all(|adj_entry| adj_entry.height > height_entry.height);
+            let is_lowest = td_adj_iter(&heightmap, x, y)
+                .all(|adj_entry| adj_entry.height > height_entry.height);
             if is_lowest {
                 part1 += (height_entry.height) as u32 + 1;
             }
@@ -64,13 +56,12 @@ pub fn day9() {
 
                     entry.is_visited = true;
                 }
-
             }
 
             basin_sizes.push(basin_size);
         }
     }
-    basin_sizes.sort();
+    basin_sizes.sort_unstable();
     let part2 = basin_sizes.iter().rev().take(3).product::<u32>();
 
     println!("Part2: {}", part2);
