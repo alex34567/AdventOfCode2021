@@ -230,6 +230,18 @@ pub fn grid_parse<T>(input: &str, mut num_to_entry: impl FnMut(u8) -> T) -> Vec<
         .collect::<Vec<Vec<_>>>()
 }
 
+pub fn print_grid<T, L: ops::Deref<Target = [T]>, D: Display>(
+    grid: &[L],
+    mut display_fn: impl FnMut(&T) -> D,
+) {
+    for line in grid.iter() {
+        for column in line.iter() {
+            print!("{}", display_fn(column))
+        }
+        println!();
+    }
+}
+
 #[allow(dead_code)]
 pub fn dbg_print_grid<T, L: ops::Deref<Target = [T]>, D: Display>(
     grid: &[L],

@@ -6,6 +6,10 @@ use std::str::FromStr;
 mod day1;
 mod day10;
 mod day11;
+mod day12;
+mod day13;
+mod day14;
+mod day15;
 mod day2;
 mod day3;
 mod day4;
@@ -16,7 +20,7 @@ mod day8;
 mod day9;
 mod util;
 
-const DAY_COUNT: u8 = 11;
+const DAY_COUNT: u8 = 15;
 
 static ARG_ERR_STRING: &str = "Put a day number or * for all";
 
@@ -33,6 +37,10 @@ fn exec_day(day_n: u8) {
         9 => day9::day9(),
         10 => day10::day10(),
         11 => day11::day11(),
+        12 => day12::day12(),
+        13 => day13::day13(),
+        14 => day14::day14(),
+        15 => day15::day15(),
         _ => panic!(),
     }
 }
