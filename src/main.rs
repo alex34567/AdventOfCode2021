@@ -23,7 +23,7 @@ mod util;
 
 const DAY_COUNT: u8 = 16;
 
-static ARG_ERR_STRING: &str = "Put a day number or * for all";
+static ARG_ERR_STRING: &str = "Put a day number or all";
 
 fn exec_day(day_n: u8) {
     match day_n {
@@ -49,7 +49,7 @@ fn exec_day(day_n: u8) {
 
 fn main() {
     let raw_day_n = env::args().nth(1).expect(ARG_ERR_STRING);
-    if raw_day_n == "*" {
+    if raw_day_n == "all" {
         for x in 1..DAY_COUNT + 1 {
             if x != 1 {
                 println!();
