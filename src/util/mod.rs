@@ -1,6 +1,8 @@
 use std::fmt::Display;
-use std::marker::PhantomData;
+use std::iter;
 use std::ops;
+
+pub mod adjacent_iter;
 
 pub fn list_of_integers_radix(input: &str, radix: u32) -> impl Iterator<Item = i32> + '_ {
     input.split('\n').filter_map(move |line| {
@@ -11,207 +13,6 @@ pub fn list_of_integers_radix(input: &str, radix: u32) -> impl Iterator<Item = i
 
 pub fn list_of_integers(input: &str) -> impl Iterator<Item = i32> + '_ {
     list_of_integers_radix(input, 10)
-}
-
-struct AdjEnuIter<'a: 'b, 'b, T: 'a, O, OReader: FnMut(&O) -> isize> {
-    list: &'a [T],
-    x: isize,
-    offsets: &'b [O],
-    offset_reader: OReader,
-}
-
-impl<'a: 'b, 'b, T: 'a, O, OReader: FnMut(&O) -> isize> Iterator
-    for AdjEnuIter<'a, 'b, T, O, OReader>
-{
-    type Item = (usize, &'a T, &'b O);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if self.offsets.is_empty() {
-                return None;
-            }
-            let raw_offset = &self.offsets[0];
-            let offset = (self.offset_reader)(raw_offset);
-            self.offsets = &self.offsets[1..];
-
-            let index =
-                if let Some(idx) = self.x.checked_add(offset).and_then(|x| x.try_into().ok()) {
-                    idx
-                } else {
-                    continue;
-                };
-
-            let item = if let Some(it) = self.list.get(index) {
-                it
-            } else {
-                continue;
-            };
-
-            return Some((index, item, raw_offset));
-        }
-    }
-}
-
-pub fn adjacent_enumerated_iter<'a: 'b, 'b, T: 'a, O>(
-    list: &'a [T],
-    x: usize,
-    offsets: &'b [O],
-    offset_reader: impl FnMut(&O) -> isize + 'b,
-) -> impl Iterator<Item = (usize, &'a T, &'b O)> + 'b {
-    AdjEnuIter {
-        list,
-        x: x.try_into().unwrap(),
-        offsets,
-        offset_reader,
-    }
-}
-
-pub fn two_d_adjacent_enumerated_iter<
-    'a: 'b,
-    'b,
-    T: 'a,
-    S: ops::Deref<Target = [T]>,
-    O: ops::Deref<Target = [isize]>,
->(
-    list: &'a [S],
-    x: usize,
-    y: usize,
-    offsets: &'b [(O, isize)],
-) -> impl Iterator<Item = (usize, usize, &'a T)> + 'b {
-    // (x, y, Item)
-    let outer_iter = adjacent_enumerated_iter(list, y, offsets, |(_, y)| *y);
-    outer_iter.flat_map(move |(y, line, (x_offsets, _))| {
-        adjacent_enumerated_iter(line, x, x_offsets, |x| *x).map(move |(x, item, _)| (x, y, item))
-    })
-}
-
-pub fn two_d_straight_adjacent_enumerated_iter<'a: 'b, 'b, T: 'a, S: ops::Deref<Target = [T]>>(
-    list: &'a [S],
-    x: usize,
-    y: usize,
-) -> impl Iterator<Item = (usize, usize, &'a T)> + 'b {
-    let offsets: &'static [(&'static [isize], isize)] = &[(&[0], -1), (&[-1, 1], 0), (&[0], 1)];
-    two_d_adjacent_enumerated_iter(list, x, y, offsets)
-}
-
-pub fn two_d_straight_adjacent_iter<'a, T: 'a, S: ops::Deref<Target = [T]>>(
-    list: &'a [S],
-    x: usize,
-    y: usize,
-) -> impl Iterator<Item = &T> {
-    two_d_straight_adjacent_enumerated_iter(list, x, y).map(|adj| adj.2)
-}
-
-//SAFETY: Offsets cannot contain dupes
-struct AdjEnuIterMut<'a: 'b, 'b, T: 'a, O, OReader: FnMut(&O) -> isize> {
-    list: *mut [T],
-    list_phantom: PhantomData<&'a mut [T]>,
-    x: isize,
-    offsets: &'b [O],
-    offset_reader: OReader,
-}
-
-impl<'a: 'b, 'b, T: 'a, O, OReader: FnMut(&O) -> isize> Iterator
-    for AdjEnuIterMut<'a, 'b, T, O, OReader>
-{
-    type Item = (usize, &'a mut T, &'b O);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if self.offsets.is_empty() {
-                return None;
-            }
-            let raw_offset = &self.offsets[0];
-            let offset = (self.offset_reader)(raw_offset);
-            self.offsets = &self.offsets[1..];
-            //SAFETY: Does not create a double reference because () is size zero.
-            let bound_list = unsafe { &*(self.list as *mut [()]) };
-
-            let index =
-                if let Some(idx) = self.x.checked_add(offset).and_then(|x| x.try_into().ok()) {
-                    idx
-                } else {
-                    continue;
-                };
-
-            if bound_list.get(index).is_none() {
-                continue;
-            }
-
-            //SAFETY: If the offsets have no dupes than the mut references cannot overlap
-            let item = unsafe { &mut *(self.list as *mut T).add(index) };
-
-            return Some((index, item, raw_offset));
-        }
-    }
-}
-
-//SAFETY: Offsets cannot contain dupes
-pub unsafe fn adjacent_enumerated_iter_mut<'a: 'b, 'b, T: 'a, O>(
-    list: &'a mut [T],
-    x: usize,
-    offsets: &'b [O],
-    offset_reader: impl FnMut(&O) -> isize + 'b,
-) -> impl Iterator<Item = (usize, &'a mut T, &'b O)> + 'b {
-    AdjEnuIterMut {
-        list,
-        list_phantom: PhantomData,
-        x: x.try_into().unwrap(),
-        offsets,
-        offset_reader,
-    }
-}
-
-//SAFETY: Offsets cannot contain dupes
-pub unsafe fn two_d_adjacent_enumerated_iter_mut<
-    'a: 'b,
-    'b,
-    T: 'a,
-    S: ops::DerefMut<Target = [T]>,
-    O: ops::Deref<Target = [isize]>,
->(
-    list: &'a mut [S],
-    x: usize,
-    y: usize,
-    offsets: &'b [(O, isize)],
-) -> impl Iterator<Item = (usize, usize, &'a mut T)> + 'b {
-    // (x, y, Item)
-    let outer_iter = unsafe { adjacent_enumerated_iter_mut(list, y, offsets, |(_, y)| *y) };
-    outer_iter.flat_map(move |(y, line, (x_offsets, _))| unsafe {
-        adjacent_enumerated_iter_mut(line, x, x_offsets, |x| *x)
-            .map(move |(x, item, _)| (x, y, item))
-    })
-}
-
-pub fn two_d_straight_adjacent_enumerated_iter_mut<
-    'a: 'b,
-    'b,
-    T: 'a,
-    S: ops::DerefMut<Target = [T]>,
->(
-    list: &'a mut [S],
-    x: usize,
-    y: usize,
-) -> impl Iterator<Item = (usize, usize, &'a mut T)> + 'b {
-    let offsets: &'static [(&'static [isize], isize)] = &[(&[0], -1), (&[-1, 1], 0), (&[0], 1)];
-    // Safety offsets do not overlap
-    unsafe { two_d_adjacent_enumerated_iter_mut(list, x, y, offsets) }
-}
-
-pub fn two_d_diagonal_adjacent_enumerated_iter_mut<
-    'a: 'b,
-    'b,
-    T: 'a,
-    S: ops::DerefMut<Target = [T]>,
->(
-    list: &'a mut [S],
-    x: usize,
-    y: usize,
-) -> impl Iterator<Item = (usize, usize, &'a mut T)> + 'b {
-    let offsets: &'static [(&'static [isize], isize)] =
-        &[(&[-1, 0, 1], -1), (&[-1, 1], 0), (&[-1, 0, 1], 1)];
-    // Safety offsets do not overlap
-    unsafe { two_d_adjacent_enumerated_iter_mut(list, x, y, offsets) }
 }
 
 pub fn grid_parse<T>(input: &str, mut num_to_entry: impl FnMut(u8) -> T) -> Vec<Vec<T>> {
@@ -252,5 +53,132 @@ pub fn dbg_print_grid<T, L: ops::Deref<Target = [T]>, D: Display>(
             eprint!("{}", display_fn(column))
         }
         eprintln!();
+    }
+}
+
+pub struct BitIter<T: Iterator<Item = u8>> {
+    front_byte: u8,
+    front_byte_left: u8,
+    back_byte: u8,
+    back_byte_left: u8,
+    iter: T,
+}
+
+macro_rules! take_into_impl {
+    ( $name: ident, $type: ty) => {
+        pub fn $name(&mut self, n: u8) -> Result<$type, usize> {
+            assert!(n as u32 <= <$type>::BITS);
+
+            let mut ret = 0;
+            for i in 0..n {
+                if let Some(bit) = self.next() {
+                    ret <<= 1;
+                    ret |= bit as $type;
+                } else {
+                    return Err(i as usize);
+                }
+            }
+            Ok(ret)
+        }
+    };
+}
+
+impl<T: Iterator<Item = u8>> BitIter<T> {
+    pub fn new<I: IntoIterator<IntoIter = T>>(iter: I) -> Self {
+        Self {
+            front_byte: 0,
+            front_byte_left: 0,
+            back_byte: 0,
+            back_byte_left: 0,
+            iter: iter.into_iter(),
+        }
+    }
+
+    take_into_impl!(take_into_u8, u8);
+    take_into_impl!(take_into_u16, u16);
+    take_into_impl!(take_into_u32, u32);
+    take_into_impl!(take_into_u64, u64);
+}
+
+impl<T: Iterator<Item = u8>> Iterator for BitIter<T> {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<bool> {
+        if self.front_byte_left == 0 {
+            if let Some(byte) = self.iter.next() {
+                self.front_byte_left = 8;
+                self.front_byte = byte;
+            } else if self.back_byte_left != 0 {
+                let bit = 1 << (self.back_byte_left - 1);
+                let ret = self.back_byte & bit != 0;
+                self.back_byte_left -= 1;
+                return Some(ret);
+            } else {
+                return None;
+            }
+        }
+
+        let bit = 1 << (self.front_byte_left - 1);
+        let ret = self.front_byte & bit != 0;
+        self.front_byte_left -= 1;
+        Some(ret)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (mut low, mut high) = self.iter.size_hint();
+        low = low.saturating_mul(8);
+        low = low.saturating_add((self.front_byte_left + self.back_byte_left).into());
+        high = high
+            .and_then(|high| high.checked_mul(8))
+            .and_then(|high| high.checked_add((self.front_byte_left + self.back_byte_left).into()));
+        (low, high)
+    }
+
+    fn last(mut self) -> Option<bool> {
+        if self.back_byte_left == 0 {
+            if let Some(iter_last) = self.iter.last() {
+                self.front_byte_left = 8;
+                self.front_byte = iter_last;
+            }
+        } else {
+            self.front_byte_left = 0;
+        }
+
+        let new_iter = BitIter {
+            front_byte: self.front_byte,
+            front_byte_left: self.front_byte_left,
+            back_byte: self.back_byte,
+            back_byte_left: self.back_byte_left,
+            iter: iter::empty(),
+        };
+
+        let mut last = None;
+        for item in new_iter {
+            last = Some(item)
+        }
+        last
+    }
+}
+
+impl<T: DoubleEndedIterator + Iterator<Item = u8>> DoubleEndedIterator for BitIter<T> {
+    fn next_back(&mut self) -> Option<bool> {
+        if self.back_byte_left == 0 {
+            if let Some(byte) = self.iter.next_back() {
+                self.back_byte_left = 8;
+                self.back_byte = byte;
+            } else if self.front_byte_left != 0 {
+                let ret = self.front_byte & 1 == 1;
+                self.front_byte >>= 1;
+                self.front_byte_left -= 1;
+                return Some(ret);
+            } else {
+                return None;
+            }
+        }
+
+        let ret = self.back_byte & 1 == 1;
+        self.back_byte >>= 1;
+        self.back_byte_left -= 1;
+        Some(ret)
     }
 }

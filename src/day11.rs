@@ -1,4 +1,5 @@
-use crate::util::{grid_parse, two_d_diagonal_adjacent_enumerated_iter_mut as adj_enu_iter_mut};
+use crate::util::adjacent_iter::two_d_diagonal_adjacent_enumerated_iter_mut as adj_enu_iter_mut;
+use crate::util::grid_parse;
 
 struct Octo {
     energy: u8,

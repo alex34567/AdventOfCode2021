@@ -1,7 +1,8 @@
-use crate::util::{
-    grid_parse, two_d_straight_adjacent_enumerated_iter_mut as td_adj_enu_iter_mut,
+use crate::util::adjacent_iter::{
+    two_d_straight_adjacent_enumerated_iter_mut as td_adj_enu_iter_mut,
     two_d_straight_adjacent_iter as td_adj_iter,
 };
+use crate::util::grid_parse;
 
 static INPUT: &str = include_str!("input/Day9.txt");
 

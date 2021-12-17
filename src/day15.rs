@@ -1,4 +1,7 @@
-use crate::util::{grid_parse, two_d_straight_adjacent_enumerated_iter_mut as td_adj_iter_mut};
+use crate::util::adjacent_iter::two_d_straight_adjacent_enumerated_iter_mut as td_adj_iter_mut;
+use crate::util::grid_parse;
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
 
 #[derive(Copy, Clone)]
 struct CaveSquare {
@@ -8,33 +11,55 @@ struct CaveSquare {
 
 static INPUT: &str = include_str!("input/Day15.txt");
 
+struct PathfindHeapData {
+    distance: u32,
+    x: usize,
+    y: usize,
+}
+
+impl PartialEq for PathfindHeapData {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.distance == rhs.distance
+    }
+}
+
+impl PartialOrd for PathfindHeapData {
+    fn partial_cmp(&self, rhs: &Self) -> Option<Ordering> {
+        Some(self.cmp(rhs))
+    }
+}
+
+impl Ord for PathfindHeapData {
+    fn cmp(&self, rhs: &Self) -> Ordering {
+        rhs.distance.cmp(&self.distance)
+    }
+}
+
+impl Eq for PathfindHeapData {}
+
 fn calc_ans(mut grid: Vec<Vec<CaveSquare>>) -> u32 {
     grid[0][0].distance = 0;
 
-    let mut visit_list = Vec::new();
-    for y in 0..grid.len() {
-        for x in 0..grid[0].len() {
-            visit_list.push((x, y));
+    let mut visit_heap = BinaryHeap::new();
+    visit_heap.push(PathfindHeapData {
+        distance: 0,
+        x: 0,
+        y: 0,
+    });
+
+    while let Some(node) = visit_heap.pop() {
+        if grid[node.y][node.x].distance != node.distance {
+            continue;
         }
-    }
-
-    while !visit_list.is_empty() {
-        let (i, (next_x, next_y)) = visit_list
-            .iter()
-            .enumerate()
-            .min_by_key(|(_, (x, y))| {
-                grid[*y][*x]
-                    .distance
-            })
-            .unwrap();
-        let next_x = *next_x;
-        let next_y = *next_y;
-        visit_list.swap_remove(i);
-
-        let next_distance = grid[next_y][next_x].distance + grid[next_y][next_x].risk;
-        for (_, _, adj_square) in td_adj_iter_mut(&mut grid, next_x, next_y) {
+        let next_distance = node.distance + grid[node.y][node.x].risk;
+        for (x, y, adj_square) in td_adj_iter_mut(&mut grid, node.x, node.y) {
             if adj_square.distance > next_distance {
                 adj_square.distance = next_distance;
+                visit_heap.push(PathfindHeapData {
+                    x,
+                    y,
+                    distance: next_distance,
+                });
             }
         }
     }
