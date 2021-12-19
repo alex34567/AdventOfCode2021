@@ -34,7 +34,7 @@ fn parse_packet(
             (stream.take_into_u32(15).unwrap(), u16::MAX)
         };
 
-        if  (5..=7).contains(&id) {
+        if (5..=7).contains(&id) {
             packet_len = 2;
         }
 
