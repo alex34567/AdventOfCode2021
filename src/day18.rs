@@ -121,9 +121,9 @@ impl ShellNumNode {
                                 explode_right = None;
                             }
                         } else if let Some(explode) = explode_left {
-                                ShellNumNode::add_left_right(&node, explode);
-                                explode_left = None;
-                            }
+                            ShellNumNode::add_left_right(&node, explode);
+                            explode_left = None;
+                        }
                         if explode_left.is_none() && explode_right.is_none() {
                             break;
                         }
