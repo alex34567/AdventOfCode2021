@@ -1,13 +1,12 @@
+use super::INPUT;
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::str::FromStr;
-use std::mem::swap;
 use std::cmp::max;
-use super::INPUT;
+use std::mem::swap;
+use std::str::FromStr;
 
 lazy_static! {
     static ref REGEX: Regex = Regex::new(r"^Player \d starting position: (\d)$").unwrap();
-
     static ref OFFSET_TABLE: [u64; 10] = {
         let mut ret = [0; 10];
         for i in 1..=3 {
@@ -22,7 +21,7 @@ lazy_static! {
 }
 
 struct Player {
-    universes: [[u64; 21]; 10]
+    universes: [[u64; 21]; 10],
 }
 
 impl Player {
@@ -66,9 +65,7 @@ impl FromStr for Player {
         let position = REGEX.captures(string).unwrap()[1].parse::<usize>().unwrap() - 1;
         let mut universes = [[0; 21]; 10];
         universes[position][0] = 1;
-        Ok(Self {
-            universes
-        })
+        Ok(Self { universes })
     }
 }
 
@@ -88,7 +85,7 @@ pub fn day21p2() {
         let win_canidites = player1.take_turn();
         player1_wins += win_canidites * player2.count();
         if player1.all_won() {
-            break
+            break;
         }
         swap(&mut player1, &mut player2);
         swap(&mut player1_wins, &mut player2_wins);

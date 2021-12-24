@@ -1,7 +1,7 @@
+use super::INPUT;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::str::FromStr;
-use super::INPUT;
 
 lazy_static! {
     static ref REGEX: Regex = Regex::new(r"^Player \d starting position: (\d)$").unwrap();
@@ -31,10 +31,7 @@ impl FromStr for Player {
 
     fn from_str(string: &str) -> Result<Self, ()> {
         let position = REGEX.captures(string).unwrap()[1].parse::<u32>().unwrap() - 1;
-        Ok(Self {
-            position,
-            score: 0
-        })
+        Ok(Self { position, score: 0 })
     }
 }
 
@@ -54,7 +51,7 @@ pub fn day21p1() {
         for player in players.iter_mut() {
             player.take_turn(&mut dice);
             if player.has_won() {
-                break
+                break;
             }
         }
     }
